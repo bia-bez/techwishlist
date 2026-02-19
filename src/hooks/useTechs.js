@@ -21,160 +21,159 @@ const TABLE = "tech_wishlist";
  * Separada do hook para manter o código organizado.
  */
 async function fetchFromSupabase() {
-    // Se o Supabase não está configurado, retorna lista vazia
-    if (!supabase) return [];
+  // Se o Supabase não está configurado, retorna lista vazia
+  if (!supabase) return [];
 
-    const { data, error } = await supabase
-        .from(TABLE)
-        .select("*")
-        .order("priority", { ascending: false });
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select("*")
+    .order("priority", { ascending: false });
 
-    if (error) {
-        throw error;
-    }
+  if (error) {
+    throw error;
+  }
 
-    return data;
+  return data;
 }
 
 export function useTechs() {
-    // Estado da lista de tecnologias
-    const [techs, setTechs] = useState([]);
+  // Estado da lista de tecnologias
+  const [techs, setTechs] = useState([]);
 
-    // Indica se está carregando dados do servidor
-    const [loading, setLoading] = useState(true);
+  // Indica se está carregando dados do servidor
+  const [loading, setLoading] = useState(true);
 
-    // Armazena mensagens de erro para exibir ao usuário
-    const [error, setError] = useState(null);
+  // Armazena mensagens de erro para exibir ao usuário
+  const [error, setError] = useState(null);
 
-    /**
-     * Busca todas as tecnologias do Supabase.
-     * Usa try/catch para tratamento de erros limpo.
-     */
-    const fetchTechs = useCallback(async () => {
-        try {
-            const data = await fetchFromSupabase();
-            setTechs(data);
-            setError(null);
-        } catch (err) {
-            console.error("Erro ao buscar tecnologias:", err);
-            setError("Não foi possível carregar as tecnologias. Tente novamente.");
-        } finally {
-            // finally roda SEMPRE, independente de sucesso ou erro.
-            setLoading(false);
-        }
-    }, []);
+  /**
+   * Busca todas as tecnologias do Supabase.
+   * Usa try/catch para tratamento de erros limpo.
+   */
+  const fetchTechs = useCallback(async () => {
+    try {
+      const data = await fetchFromSupabase();
+      setTechs(data);
+      setError(null);
+    } catch (err) {
+      console.error("Erro ao buscar tecnologias:", err);
+      setError("Não foi possível carregar as tecnologias. Tente novamente.");
+    } finally {
+      // finally roda SEMPRE, independente de sucesso ou erro.
+      setLoading(false);
+    }
+  }, []);
 
-    /**
-     * Adiciona uma nova tecnologia à lista.
-     * Retorna true se sucesso, false se erro.
-     */
-    const addTech = useCallback(
-        async (tech) => {
-            if (!supabase) {
-                // Modo offline: adiciona apenas localmente (Optimistic UI fake)
-                setTechs((prev) => [{ id: Date.now(), ...tech }, ...prev]);
-                return true;
-            }
+  /**
+   * Adiciona uma nova tecnologia à lista.
+   * Retorna true se sucesso, false se erro.
+   */
+  const addTech = useCallback(
+    async (tech) => {
+      if (!supabase) {
+        // Modo offline: adiciona apenas localmente (Optimistic UI fake)
+        setTechs((prev) => [{ id: Date.now(), ...tech }, ...prev]);
+        return true;
+      }
 
-            setError(null);
+      setError(null);
 
-            const { error: insertError } = await supabase
-                .from(TABLE)
-                .insert([tech]);
+      const { error: insertError } = await supabase.from(TABLE).insert([tech]);
 
-            if (insertError) {
-                console.error("Erro ao adicionar:", insertError);
-                setError("Erro ao adicionar tecnologia. Tente novamente.");
-                return false;
-            }
+      if (insertError) {
+        console.error("Erro ao adicionar:", insertError);
+        setError("Erro ao adicionar tecnologia. Tente novamente.");
+        return false;
+      }
 
-            // Recarrega a lista atualizada do servidor para garantir sincronia
-            await fetchTechs();
-            return true;
-        },
-        [fetchTechs]
-    );
+      // Recarrega a lista atualizada do servidor para garantir sincronia
+      await fetchTechs();
+      return true;
+    },
+    [fetchTechs],
+  );
 
-    /**
-     * Atualiza uma tecnologia existente pelo ID.
-     * Recebe o id e os campos a serem atualizados.
-     */
-    const updateTech = useCallback(
-        async (id, updates) => {
-            if (!supabase) {
-                // Modo offline: atualiza localmente
-                setTechs((prev) =>
-                    prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
-                );
-                return true;
-            }
+  /**
+   * Atualiza uma tecnologia existente pelo ID.
+   * Recebe o id e os campos a serem atualizados.
+   */
+  const updateTech = useCallback(
+    async (id, updates) => {
+      if (!supabase) {
+        // Modo offline: atualiza localmente
+        setTechs((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+        );
+        return true;
+      }
 
-            setError(null);
+      setError(null);
 
-            const { error: updateError } = await supabase
-                .from(TABLE)
-                .update(updates)
-                .eq("id", id);
+      const { error: updateError } = await supabase
+        .from(TABLE)
+        .update(updates)
+        .eq("id", id);
 
-            if (updateError) {
-                console.error("Erro ao atualizar:", updateError);
-                setError("Erro ao atualizar tecnologia. Tente novamente.");
-                return false;
-            }
+      if (updateError) {
+        console.error("Erro ao atualizar:", updateError);
+        setError("Erro ao atualizar tecnologia. Tente novamente.");
+        return false;
+      }
 
-            await fetchTechs();
-            return true;
-        },
-        [fetchTechs]
-    );
+      await fetchTechs();
+      return true;
+    },
+    [fetchTechs],
+  );
 
-    /**
-     * Remove uma tecnologia pelo ID.
-     */
-    const deleteTech = useCallback(
-        async (id) => {
-            if (!supabase) {
-                // Modo offline: remove localmente (String cast para segurança de tipos)
-                setTechs((prev) => prev.filter((t) => String(t.id) !== String(id)));
-                return true;
-            }
+  /**
+   * Remove uma tecnologia pelo ID.
+   */
+  const deleteTech = useCallback(
+    async (id) => {
+      if (!supabase) {
+        // Modo offline: remove localmente (String cast para segurança de tipos)
+        setTechs((prev) => prev.filter((t) => String(t.id) !== String(id)));
+        return true;
+      }
 
-            setError(null);
+      setError(null);
 
-            const { error: deleteError } = await supabase
-                .from(TABLE)
-                .delete()
-                .eq("id", id);
+      const { error: deleteError } = await supabase
+        .from(TABLE)
+        .delete()
+        .eq("id", id);
 
-            if (deleteError) {
-                console.error("Erro ao remover:", deleteError);
-                setError("Erro ao remover tecnologia. Tente novamente.");
-                return false;
-            }
+      if (deleteError) {
+        console.error("Erro ao remover:", deleteError);
+        setError("Erro ao remover tecnologia. Tente novamente.");
+        return false;
+      }
 
-            await fetchTechs();
-            return true;
-        },
-        [fetchTechs]
-    );
+      setTechs((prev) => prev.filter((t) => String(t.id) !== String(id)));
 
-    // Função para limpar o erro (também memorizada)
-    const clearError = useCallback(() => setError(null), []);
+      return true;
+    },
+    [fetchTechs],
+  );
 
-    // Busca os dados quando o hook é usado pela primeira vez
-    useEffect(() => {
-        fetchTechs();
-    }, [fetchTechs]);
+  // Função para limpar o erro (também memorizada)
+  const clearError = useCallback(() => setError(null), []);
 
-    // Retorna tudo que os componentes precisam (Interface Pública do Hook)
-    return {
-        techs,
-        setTechs,
-        loading,
-        error,
-        addTech,
-        updateTech,
-        deleteTech,
-        clearError,
-    };
+  // Busca os dados quando o hook é usado pela primeira vez
+  useEffect(() => {
+    fetchTechs();
+  }, [fetchTechs]);
+
+  // Retorna tudo que os componentes precisam (Interface Pública do Hook)
+  return {
+    techs,
+    setTechs,
+    loading,
+    error,
+    addTech,
+    updateTech,
+    deleteTech,
+    clearError,
+  };
 }
