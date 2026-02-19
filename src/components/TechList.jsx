@@ -32,7 +32,8 @@ function TechList({
   onDragEnd,
   onResize,
   loading,
-  children, // Aceita children (TechFormWidget)
+  viewState, // Novo prop
+  children,
 }) {
   /**
    * Sensors definem como o drag é iniciado.
@@ -64,29 +65,25 @@ function TechList({
     );
   }
 
-  // ─── Empty State Logic ───
-  // Mesmo vazio, precisamos renderizar o DndContext para o TechFormWidget funcionar!
-  // Então o EmptyState será renderizado DENTRO do canvas se não houver techs.
-
-  // Calcula a altura mínima do canvas
-  const maxBottom = techs.reduce((max, tech) => {
-    const pos = positions[tech.id] || { y: 0 };
-    const sz = sizes[tech.id] || { h: 72 };
-    return Math.max(max, pos.y + sz.h + 40);
-  }, 600); // Mínimo maior para caber o form
+  // ─── Estilo do Canvas Infinito ───
+  const canvasStyle = {
+    transform: `translate(${viewState?.x ?? 0}px, ${viewState?.y ?? 0}px) scale(${viewState?.scale ?? 1})`,
+    transformOrigin: "0 0", // Zoom e Pan partem do topo esquerdo (simplifica math)
+    width: "100%",
+    height: "100%",
+  };
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
-
-
       {/* Canvas de drag livre */}
       <DndContext sensors={sensors} onDragEnd={onDragEnd}>
         <div
           className="dashboard-canvas"
-          style={{ minHeight: Math.max(maxBottom, 600) }}
+          style={canvasStyle}
         >
-          {/* Grid de referência visual (pontos) */}
+          {/* Grid de referência visual (pontos) - Escala junto ou fica fixo? 
+              Se ficar dentro, escala junto (melhor para referência de espaço).
+          */}
           <div className="canvas-grid" />
 
           {/* Renderiza Widgets (TechForm) */}
@@ -131,6 +128,11 @@ TechList.propTypes = {
   onDragEnd: PropTypes.func.isRequired,
   onResize: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  viewState: PropTypes.shape({
+    x: PropTypes.number,
+    y: PropTypes.number,
+    scale: PropTypes.number,
+  }),
   children: PropTypes.node,
 };
 

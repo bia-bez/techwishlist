@@ -12,6 +12,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useTechs } from "./hooks/useTechs";
 import TechFormWidget from "./components/TechFormWidget"; // Widget flutuante
 import BrandLogoWidget from "./components/BrandLogoWidget"; // Logo arrastável
+import ZoomControls from "./components/ZoomControls"; // Controles de Zoom
 import TechList from "./components/TechList";
 import ErrorBanner from "./components/ErrorBanner";
 
@@ -118,48 +119,99 @@ function App() {
    * Impede que os elementos saiam de QUALQUER borda da tela.
    * Respeita o tamanho atual da janela (viewport).
    */
+  // View State (Pan & Zoom)
+  const [viewState, setViewState] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_view");
+    return saved ? JSON.parse(saved) : { x: 0, y: 0, scale: 1 };
+  });
+
+  // Persist View State
+  useEffect(() => {
+    localStorage.setItem("tech_layout_view", JSON.stringify(viewState));
+  }, [viewState]);
+
+  // ─── Zoom Helpers ───
+  const handleZoomIn = useCallback(() => {
+    setViewState(prev => ({ ...prev, scale: Math.min(prev.scale + 0.1, 5) }));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setViewState(prev => ({ ...prev, scale: Math.max(prev.scale - 0.1, 0.1) }));
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setViewState({ x: 0, y: 0, scale: 1 });
+  }, []);
+
+  /**
+   * handleDragEnd: O Coração do Drag & Drop
+   * 
+   * Ajuste para Zoom:
+   * Quando o canvas está com zoom (scale != 1), o movimento do mouse
+   * não corresponde 1:1 aos pixels do canvas.
+   * Precisamos dividir o delta pelo scale.
+   */
   const handleDragEnd = useCallback((event) => {
     const { active, delta } = event;
     if (!delta) return;
 
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Tamanhos estimados (ou reais do state) para cálculo de colisão
-    // Se o elemento for maior que a tela, permite apenas 0 (topo/esq)
+    // Compensar o zoom
+    const scale = viewState.scale;
+    const adjustedDelta = {
+      x: delta.x / scale,
+      y: delta.y / scale,
+    };
 
     if (active.id === "tech-form-widget") {
-      const w = formSize.w || 360;
-      const h = typeof formSize.h === 'number' ? formSize.h : 400; // Estima altura se auto
-
       setFormPos((prev) => ({
-        x: Math.min(Math.max(0, prev.x + delta.x), vw - w),
-        y: Math.min(Math.max(0, prev.y + delta.y), vh - h),
+        x: prev.x + adjustedDelta.x,
+        y: prev.y + adjustedDelta.y,
       }));
     } else if (active.id === "brand-logo-widget") {
-      const w = 280; // Largura do SVG
-      const h = 100; // Altura do SVG
-
       setLogoPos((prev) => ({
-        x: Math.min(Math.max(0, prev.x + delta.x), vw - w),
-        y: Math.min(Math.max(0, prev.y + delta.y), vh - h),
+        x: prev.x + adjustedDelta.x,
+        y: prev.y + adjustedDelta.y,
       }));
     } else {
-      // Cards
-      const currentSize = sizes[active.id] || { w: 280, h: 72 };
-
       setPositions((prev) => {
         const current = prev[active.id] || { x: 0, y: 0 };
         return {
           ...prev,
           [active.id]: {
-            x: Math.min(Math.max(0, current.x + delta.x), vw - currentSize.w),
-            y: Math.min(Math.max(0, current.y + delta.y), vh - currentSize.h),
+            x: current.x + adjustedDelta.x,
+            y: current.y + adjustedDelta.y,
           },
         };
       });
     }
-  }, [formSize, sizes]);
+  }, [viewState.scale]);
+
+  // ─── Canvas Pan & Zoom Handlers ───
+
+  const handleWheel = useCallback((e) => {
+    // Se estiver segurando Ctrl ou usando pinch-to-zoom (trackpad)
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const zoomSensitivity = 0.001;
+      const delta = -e.deltaY * zoomSensitivity;
+      const newScale = Math.min(Math.max(0.1, viewState.scale + delta), 5); // Min 0.1x, Max 5x
+
+      // Zoom focalizado no mouse (mais complexo, por enquanto zoom simples no centro/canto)
+      // Futuramente podemos implementar zoom focalizado subtraindo offsets.
+
+      setViewState(prev => ({ ...prev, scale: newScale }));
+    } else {
+      // Pan normal com scroll
+      setViewState(prev => ({
+        ...prev,
+        x: prev.x - e.deltaX,
+        y: prev.y - e.deltaY
+      }));
+    }
+  }, [viewState.scale]);
+
+  // Pan com botão do meio ou Space+Drag seria implementado aqui ou no wrapper
+
 
   const handleResizeCard = useCallback((id, newSize) => {
     setSizes((prev) => ({ ...prev, [id]: newSize }));
@@ -195,7 +247,12 @@ function App() {
   }, [logoPos]);
 
   return (
-    <div className="app-container" ref={containerRef}>
+    <div
+      className="app-container"
+      ref={containerRef}
+      onWheel={handleWheel} // Zoom via scroll
+    // Pan via botão do meio (opcional) ou custom logic
+    >
       {/* Efeitos decorativos de fundo */}
       <div className="glow glow-1" />
       <div className="glow glow-2" />
@@ -223,6 +280,7 @@ function App() {
         onDragEnd={handleDragEnd}
         onResize={handleResizeCard}
         loading={loading}
+        viewState={viewState} // Passando estado da câmera
       >
         {/* Logo Widget arrastável */}
         <BrandLogoWidget position={logoPos} />
@@ -237,8 +295,16 @@ function App() {
         />
       </TechList>
 
+      {/* Controles de Zoom Flutuantes */}
+      <ZoomControls
+        scale={viewState.scale}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onReset={handleReset}
+      />
+
       {/* Footer */}
-      <footer className="app-footer pointer-events-none">
+      <footer className="app-footer pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2">
         <p>
           Feito com <span className="text-red-400">♥</span> por{" "}
           <strong>Vintage DevStack</strong>
