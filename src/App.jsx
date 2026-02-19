@@ -210,6 +210,57 @@ function App() {
     }
   }, [viewState.scale]);
 
+  // ─── Background Pan Handlers ───
+  const [isPanning, setIsPanning] = useState(false);
+  const lastPanRef = useRef({ x: 0, y: 0 });
+
+  const handleMouseDown = useCallback((e) => {
+    // Só inicia Pan se clicar no fundo (app-container ou dashboard-canvas)
+    // e se NÃO estiver clicando em algo interativo (botões, inputs, cards)
+    const isInteractive = e.target.closest("button, input, a, .tech-card, .glass-card, .resize-handle");
+
+    // Middle click (button 1) ou Left click (button 0) no fundo
+    if (!isInteractive && (e.button === 0 || e.button === 1)) {
+      setIsPanning(true);
+      lastPanRef.current = { x: e.clientX, y: e.clientY };
+      e.preventDefault(); // Evita seleção de texto
+    }
+  }, []);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isPanning) return;
+
+    const dx = e.clientX - lastPanRef.current.x;
+    const dy = e.clientY - lastPanRef.current.y;
+
+    lastPanRef.current = { x: e.clientX, y: e.clientY };
+
+    setViewState((prev) => ({
+      ...prev,
+      x: prev.x + dx,
+      y: prev.y + dy,
+    }));
+  }, [isPanning]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false);
+  }, []);
+
+  // Listener global para MouseUp (caso solte fora do elemento)
+  useEffect(() => {
+    if (isPanning) {
+      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mousemove", handleMouseMove);
+    } else {
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+    }
+    return () => {
+      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [isPanning, handleMouseMove, handleMouseUp]);
+
   // Pan com botão do meio ou Space+Drag seria implementado aqui ou no wrapper
 
 
@@ -248,10 +299,14 @@ function App() {
 
   return (
     <div
-      className="app-container"
+      className={`app-container ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
       ref={containerRef}
-      onWheel={handleWheel} // Zoom via scroll
-    // Pan via botão do meio (opcional) ou custom logic
+      onWheel={handleWheel}
+      onMouseDown={handleMouseDown}
+      style={{
+        // Garante que o container capture, mas permite cursor customizado
+        touchAction: "none" // Melhora performance em touch
+      }}
     >
       {/* Efeitos decorativos de fundo */}
       <div className="glow glow-1" />
