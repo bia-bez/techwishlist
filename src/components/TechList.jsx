@@ -1,83 +1,130 @@
 /**
- * TechList — Exibe a lista de tecnologias com suporte a edição e remoção.
+ * TechList — Canvas livre para cards arrastáveis.
  *
- * Props:
- * - techs: array de objetos { id, name, priority }
- * - onUpdate(id, updates): função para atualizar
- * - onDelete(id): função para remover
- * - loading: boolean indicando carregamento
+ * Diferente de um grid tradicional, este componente cria uma
+ * área (canvas) onde os cards podem ser posicionados livremente,
+ * como na dashboard do Railway.
  *
- * Conceitos usados:
- * - map(): transforma cada item do array em um componente React
- * - key: identificador único para React otimizar re-renders
- * - Renderização condicional: mostra loading, empty ou lista
+ * Conceitos:
+ * - DndContext: provedor de drag-and-drop do @dnd-kit
+ * - PointerSensor / TouchSensor: detectam drag via mouse/touch
+ * - Canvas com position: relative contém cards com position: absolute
+ * - Cada card tem suas coordenadas x,y e tamanho w,h independentes
  */
 import PropTypes from "prop-types";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { Loader2 } from "lucide-react";
 import TechCard from "./TechCard";
 import EmptyState from "./EmptyState";
-import { Loader2 } from "lucide-react";
 
-function TechList({ techs, onUpdate, onDelete, loading }) {
-  // Estado de carregamento — mostra skeleton animado
+function TechList({
+  techs,
+  positions,
+  sizes,
+  onUpdate,
+  onDelete,
+  onDragEnd,
+  onResize,
+  loading,
+  children, // Aceita children (TechFormWidget)
+}) {
+  /**
+   * Sensors definem como o drag é iniciado.
+   * distance: 8 previne drag acidental em cliques normais.
+   */
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    })
+  );
+
+  // ─── Loading ───
   if (loading) {
     return (
-      <div className="w-full max-w-lg mt-6">
-        <div className="flex items-center justify-center gap-2 text-white/50 py-8">
-          <Loader2 size={20} className="animate-spin" />
-          <span>Carregando tecnologias...</span>
-        </div>
+      <div className="dashboard-loading">
+        <Loader2 size={24} className="animate-spin text-violet-400" />
+        <span className="text-white/50">Carregando tecnologias...</span>
       </div>
     );
   }
 
-  // Estado vazio — mostra mensagem amigável
-  if (techs.length === 0) {
-    return <EmptyState />;
-  }
+  // ─── Empty State Logic ───
+  // Mesmo vazio, precisamos renderizar o DndContext para o TechFormWidget funcionar!
+  // Então o EmptyState será renderizado DENTRO do canvas se não houver techs.
 
-  // Lista de tecnologias
+  // Calcula a altura mínima do canvas
+  const maxBottom = techs.reduce((max, tech) => {
+    const pos = positions[tech.id] || { y: 0 };
+    const sz = sizes[tech.id] || { h: 72 };
+    return Math.max(max, pos.y + sz.h + 40);
+  }, 600); // Mínimo maior para caber o form
+
   return (
-    <div className="w-full max-w-lg mt-6 space-y-3">
-      {/* Cabeçalho da lista */}
-      <div className="flex items-center justify-between px-1 mb-2">
-        <h2 className="text-white/60 text-sm font-medium">
-          Sua Wishlist
-        </h2>
-        <span className="text-white/30 text-xs">
-          {techs.length} {techs.length === 1 ? "item" : "itens"}
-        </span>
-      </div>
+    <div className="dashboard-container">
+      {/* Header */}
 
-      {/* 
-        Renderiza cada tech como um TechCard.
-        IMPORTANTE: usamos tech.id como key (nunca o index!)
-        → O React usa a key para saber qual item mudou, foi adicionado ou removido.
-        → Usar index como key pode causar bugs visuais em listas dinâmicas.
-      */}
-      {techs.map((tech) => (
-        <TechCard
-          key={tech.id}
-          tech={tech}
-          onUpdate={onUpdate}
-          onDelete={onDelete}
-        />
-      ))}
+
+      {/* Canvas de drag livre */}
+      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+        <div
+          className="dashboard-canvas"
+          style={{ minHeight: Math.max(maxBottom, 600) }}
+        >
+          {/* Grid de referência visual (pontos) */}
+          <div className="canvas-grid" />
+
+          {/* Renderiza Widgets (TechForm) */}
+          {children}
+
+          {/* Renderiza Cards ou Empty State */}
+          {techs.length === 0 ? (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <EmptyState />
+            </div>
+          ) : (
+            techs.map((tech) => (
+              <TechCard
+                key={tech.id}
+                tech={tech}
+                position={positions[tech.id] || { x: 0, y: 0 }}
+                size={sizes[tech.id]}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onResize={onResize}
+              />
+            ))
+          )}
+        </div>
+      </DndContext>
     </div>
   );
 }
 
-// Validação das props
 TechList.propTypes = {
   techs: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.number.isRequired,
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       name: PropTypes.string.isRequired,
       priority: PropTypes.number.isRequired,
     })
   ).isRequired,
+  positions: PropTypes.object.isRequired,
+  sizes: PropTypes.object.isRequired,
   onUpdate: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  loading: PropTypes.bool.isRequired,
+  onDragEnd: PropTypes.func.isRequired,
+  onResize: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  children: PropTypes.node,
 };
 
 export default TechList;

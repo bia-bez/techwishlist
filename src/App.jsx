@@ -1,88 +1,185 @@
 /**
- * App.jsx — Componente principal da aplicação Tech Wishlist.
+ * App.jsx — Componente raiz da aplicação Tech Wishlist.
  *
- * Aqui orquestramos todos os componentes e usamos o hook customizado
- * useTechs para gerenciar os dados.
- *
- * Arquitetura:
- * ┌─────────────────────────────────┐
- * │            App                  │
- * │  ┌───────────────────────────┐  │
- * │  │      ErrorBanner          │  │
- * │  ├───────────────────────────┤  │
- * │  │      TechForm             │  │
- * │  ├───────────────────────────┤  │
- * │  │      TechList             │  │
- * │  │  ┌─────────────────────┐  │  │
- * │  │  │   TechCard (cada)   │  │  │
- * │  │  └─────────────────────┘  │  │
- * │  └───────────────────────────┘  │
- * └─────────────────────────────────┘
- *
- * Conceitos usados:
- * - Custom Hook (useTechs): toda lógica de dados está isolada
- * - Composição: App monta os componentes como blocos
- * - Props drilling: App passa funções para os filhos
+ * Gerencia:
+ * - CRUD via hook useTechs (Supabase)
+ * - Posições x,y de cada card no canvas (drag livre)
+ * - Tamanhos w,h de cada card (resize)
+ * - Posição e tamanho do TechFormWidget (novo)
+ * - Layout geral da dashboard (Canvas Infinito)
  */
-import TechForm from "./components/TechForm";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useTechs } from "./hooks/useTechs";
+import TechFormWidget from "./components/TechFormWidget"; // Widget flutuante
 import TechList from "./components/TechList";
 import ErrorBanner from "./components/ErrorBanner";
-import { useTechs } from "./hooks/useTechs";
-import { Code2 } from "lucide-react";
+import BrandLogo from "./components/BrandLogo";
+
+/**
+ * Calcula posições iniciais em grid para cards sem posição definida.
+ * Distribui em colunas de 300px com 16px de gap.
+ */
+function calculateGridPositions(techs, existingPositions, containerWidth = 900) {
+  const positions = { ...existingPositions };
+  const cardW = 280;
+  const cardH = 72;
+  const gapX = 16;
+  const gapY = 16;
+  const cols = Math.max(1, Math.floor(containerWidth / (cardW + gapX)));
+
+  let nextIndex = 0;
+
+  techs.forEach((tech) => {
+    if (positions[tech.id]) return;
+    const col = nextIndex % cols;
+    const row = Math.floor(nextIndex / cols);
+    // Offset inicial para não ficar em cima do form (exagerado para segurança)
+    const startY = 400;
+    positions[tech.id] = {
+      x: col * (cardW + gapX),
+      y: startY + row * (cardH + gapY),
+    };
+    nextIndex++;
+  });
+
+  return positions;
+}
 
 function App() {
-  // Hook customizado retorna dados + funções CRUD + estados
   const { techs, loading, error, addTech, updateTech, deleteTech, clearError } =
     useTechs();
 
+  // Cards state
+  const [positions, setPositions] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_positions");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [sizes, setSizes] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_sizes");
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  // Form Widget state
+  const [formPos, setFormPos] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_form_pos");
+    return saved ? JSON.parse(saved) : { x: 20, y: 140 };
+  });
+  const [formSize, setFormSize] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_form_size");
+    return saved ? JSON.parse(saved) : { w: 360, h: "auto" };
+  });
+
+  const containerRef = useRef(null);
+
+  // Atribui posições automáticas
+  useEffect(() => {
+    if (techs.length === 0) return;
+    const width = containerRef.current?.offsetWidth || 900;
+    setPositions((prev) => calculateGridPositions(techs, prev, width));
+  }, [techs]);
+
+  /**
+   * Gerencia drag de TODOS os elementos (cards e form widget).
+   */
+  const handleDragEnd = useCallback((event) => {
+    const { active, delta } = event;
+    if (!delta) return;
+
+    if (active.id === "tech-form-widget") {
+      setFormPos((prev) => ({
+        x: prev.x + delta.x,
+        y: prev.y + delta.y,
+      }));
+    } else {
+      setPositions((prev) => {
+        const current = prev[active.id] || { x: 0, y: 0 };
+        return {
+          ...prev,
+          [active.id]: {
+            x: current.x + delta.x,
+            y: current.y + delta.y,
+          },
+        };
+      });
+    }
+  }, []);
+
+  const handleResizeCard = useCallback((id, newSize) => {
+    setSizes((prev) => ({ ...prev, [id]: newSize }));
+  }, []);
+
+  const handleResizeForm = useCallback((newSize) => {
+    setFormSize(newSize);
+  }, []);
+
+  // ─── Persistence Effects ───
+  useEffect(() => {
+    localStorage.setItem("tech_layout_positions", JSON.stringify(positions));
+  }, [positions]);
+
+  useEffect(() => {
+    localStorage.setItem("tech_layout_sizes", JSON.stringify(sizes));
+  }, [sizes]);
+
+  useEffect(() => {
+    localStorage.setItem("tech_layout_form_pos", JSON.stringify(formPos));
+  }, [formPos]);
+
+  useEffect(() => {
+    localStorage.setItem("tech_layout_form_size", JSON.stringify(formSize));
+  }, [formSize]);
+
   return (
-    <div className="min-h-screen bg-dark flex flex-col items-center relative overflow-hidden">
-      {/* Efeitos de fundo decorativos */}
-      <div className="bg-glow bg-glow-1" />
-      <div className="bg-glow bg-glow-2" />
+    <div className="app-container" ref={containerRef}>
+      {/* Efeitos decorativos de fundo */}
+      <div className="glow glow-1" />
+      <div className="glow glow-2" />
 
-      {/* Container principal com padding responsivo */}
-      <main className="relative z-10 w-full max-w-lg mx-auto px-4 py-10 flex flex-col items-center">
-        {/* Logo e título */}
-        <header className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-400 mb-4 shadow-lg shadow-emerald-500/20">
-            <Code2 size={28} className="text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
-            Tech Wishlist
-          </h1>
-          <p className="text-white/40 text-sm mt-2">
-            Organize suas metas de aprendizado
-          </p>
-        </header>
+      {/* Header com Logo Personalizado */}
+      <header className="app-header mb-8 flex flex-col items-center pointer-events-none select-none">
+        <BrandLogo className="mb-2 pointer-events-auto" />
+        <p className="app-subtitle">
+          Organize suas metas de aprendizado tecnológico
+        </p>
+      </header>
 
-        {/* Banner de erro (só aparece quando há erro) */}
-        <ErrorBanner message={error} onClose={clearError} />
+      {/* Banner de erro */}
+      {error && <ErrorBanner message={error} onDismiss={clearError} />}
 
-        {/* Formulário de adição */}
-        <TechForm onAdd={addTech} />
+      {/* DndContext Global (Canvas) gerenciado pelo TechList
+          Mas o TechFormWidget precisa estar DENTRO do contexto de drag.
+          
+          Como o TechList já tem o DndContext interno, precisamos refatorar
+          para elevar o DndContext para o App, OU passar o Widget como children pro TechList.
+          
+          Vou usar a estratégia de passar como children para o TechList (que virou um CanvasWrapper).
+       */}
 
-        {/* Lista de tecnologias */}
-        <TechList
-          techs={techs}
-          onUpdate={updateTech}
-          onDelete={deleteTech}
-          loading={loading}
+      <TechList
+        techs={techs}
+        positions={positions}
+        sizes={sizes}
+        onUpdate={updateTech}
+        onDelete={deleteTech}
+        onDragEnd={handleDragEnd}
+        onResize={handleResizeCard}
+        loading={loading}
+      >
+        {/* TechFormWidget agora vive dentro do Canvas Context */}
+        <TechFormWidget
+          onAdd={addTech}
+          position={formPos}
+          size={formSize}
+          onResize={handleResizeForm}
+          techCount={techs.length}
         />
-      </main>
+      </TechList>
 
-      {/* Rodapé */}
-      <footer className="relative z-10 w-full text-center py-6 mt-auto">
-        <p className="text-white/20 text-xs">
-          Feito com ❤️ por{" "}
-          <a
-            href="https://github.com/bia-bez"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-emerald-500/50 hover:text-emerald-400 transition-colors"
-          >
-            bia-bez
-          </a>
+      {/* Footer */}
+      <footer className="app-footer pointer-events-none">
+        <p>
+          Feito com <span className="text-red-400">♥</span> por{" "}
+          <strong>Vintage DevStack</strong>
         </p>
       </footer>
     </div>

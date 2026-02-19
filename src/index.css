@@ -1,239 +1,577 @@
-/*
- * index.css — Design System centralizado.
- *
- * Aqui definimos TODOS os estilos reutilizáveis do projeto.
- * Os componentes usam essas classes via className="nome-da-classe".
- *
- * Organização:
- * 1. Tailwind directives (obrigatório)
- * 2. Variáveis CSS globais
- * 3. Reset e base
- * 4. Componentes (glass-card, botões, inputs)
- * 5. Utilitários e animações
- */
+/* ══════════════════════════════════════════════════════════
+   TECH WISHLIST — Design System
+   Dashboard premium estilo Railway com drag-and-drop
+   ══════════════════════════════════════════════════════════ */
 
-/* ─── 1. FONTE DO GOOGLE FONTS (deve vir antes das diretivas) ─── */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+/* Google Fonts — fonte moderna e legível + handwriting para logo */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Caveat:wght@700&display=swap');
 
-/* ─── 2. TAILWIND DIRECTIVES ─── */
+/* Tailwind CSS — framework utilitário */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── 3. BASE & RESET ─── */
-@layer base {
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+/* ─── Reset & Base ─── */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-    body {
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: #0a0a0f;
+    color: #ffffff;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── App Container ─── */
+.app-container {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1.5rem;
+    overflow: auto;
+    overflow-x: hidden;
+    /* Evita scroll horizontal indesejado por conta do glow, mas vertical ok */
+}
+
+/* ─── Glowing Background Effects ─── */
+.glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.glow-1 {
+    width: 600px;
+    height: 600px;
+    background: #8b5cf6;
+    top: -200px;
+    left: -200px;
+}
+
+.glow-2 {
+    width: 500px;
+    height: 500px;
+    background: #06b6d4;
+    bottom: -150px;
+    right: -150px;
+}
+
+/* ─── Header ─── */
+.app-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    z-index: 1;
+}
+
+.app-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #c084fc, #818cf8, #22d3ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.title-emoji {
+    -webkit-text-fill-color: initial;
+    margin-right: 0.25rem;
+}
+
+.app-subtitle {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* ─── Glass Card (Formulário) ─── */
+.glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.3s ease;
+}
+
+.glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ─── Input Field ─── */
+.input-field {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    color: #fff;
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.input-field:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.input-field::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Autocomplete Suggestions ─── */
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.25rem;
+    background: rgba(20, 20, 30, 0.98);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    z-index: 50;
+    overflow: hidden;
+    animation: slideDown 0.15s ease-out;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-align: left;
+}
+
+.suggestion-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.suggestion-item+.suggestion-item {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─── Tech Icon ─── */
+.tech-icon {
+    border-radius: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.tech-icon-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: white;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* ─── Priority Button ─── */
+.priority-btn {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.priority-btn:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: #c084fc;
+}
+
+.priority-btn-active {
+    background: linear-gradient(135deg, #7c3aed, #6366f1) !important;
+    border-color: #8b5cf6 !important;
+    color: white !important;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Priority buttons (small, inline edit) */
+.priority-btn-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.priority-btn-sm:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+/* ─── Primary Button ─── */
+.btn-primary {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    border: none;
+    border-radius: 0.75rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─── Loading Spinner ─── */
+.loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+/* ─── Dashboard Container ─── */
+.dashboard-container {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 2rem;
+    z-index: 1;
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0 0.25rem;
+}
+
+.tech-count {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+}
+
+.dashboard-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 3rem 0;
+    width: 100%;
+    max-width: 900px;
+    margin-top: 2rem;
+}
+
+/* ─── Dashboard Canvas (drag livre estilo Railway) ─── */
+.dashboard-canvas {
+    position: relative;
+    width: 100%;
+    /* Canvas invisível - apenas área funcional */
+    background: transparent;
+    border: none;
+    overflow: visible;
+    /* Garante área útil grande para drag (quase tela toda) */
+    min-height: 85vh;
+}
+
+/* Grid de pontos decorativo (referência visual) */
+.canvas-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    /* Grid de pontos muito sutil, quase invisível */
+    background-image: radial-gradient(circle,
+            rgba(255, 255, 255, 0.03) 1px,
+            transparent 1px);
+    background-size: 24px 24px;
+    border-radius: inherit;
+}
+
+/* ─── Resize Handle ─── */
+.resize-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 16px;
+    height: 16px;
+    cursor: nwse-resize;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+}
+
+.resize-handle::before {
+    content: "";
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0 0 2px 0;
+}
+
+.group:hover .resize-handle {
+    opacity: 1;
+}
+
+.resize-handle:hover::before {
+    border-color: #8b5cf6;
+}
+
+/* ─── Card expandido (icon maior) ─── */
+.tech-card-icon-lg {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+    .dashboard-canvas {
+        min-height: 300px;
     }
 }
 
-/* ─── 4. COMPONENTES REUTILIZÁVEIS ─── */
-@layer components {
-
-    /* Fundo escuro premium */
-    .bg-dark {
-        background-color: #0a0a0f;
-        background-image: radial-gradient(ellipse at 50% 0%,
-                rgba(16, 185, 129, 0.03) 0%,
-                transparent 60%);
-    }
-
-    /* Brilhos de fundo decorativos (efeito ambiental) */
-    .bg-glow {
-        position: fixed;
-        border-radius: 50%;
-        filter: blur(120px);
-        opacity: 0.4;
-        pointer-events: none;
-    }
-
-    .bg-glow-1 {
-        width: 400px;
-        height: 400px;
-        top: -100px;
-        right: -100px;
-        background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent);
-    }
-
-    .bg-glow-2 {
-        width: 350px;
-        height: 350px;
-        bottom: -80px;
-        left: -80px;
-        background: radial-gradient(circle, rgba(6, 182, 212, 0.1), transparent);
-    }
-
-    /* Card com efeito de vidro (glassmorphism) */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-    }
-
-    /* Card de tecnologia na lista */
-    .tech-card {
-        @apply glass-card flex items-center p-4 rounded-xl;
-        transition: all 0.2s ease;
-    }
-
-    .tech-card:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.1);
-        transform: translateY(-1px);
-    }
-
-    /* Badge de prioridade */
-    .priority-badge {
-        @apply flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-xs font-bold;
-        min-width: 44px;
-        justify-content: center;
-    }
-
-    /* Botões de prioridade no formulário */
-    .priority-btn {
-        @apply flex flex-col items-center py-2 rounded-xl transition-all duration-200;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        color: rgba(255, 255, 255, 0.4);
-    }
-
-    .priority-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    .priority-btn-active {
-        background: rgba(16, 185, 129, 0.15) !important;
-        border-color: rgba(16, 185, 129, 0.4) !important;
-        color: rgb(52, 211, 153) !important;
-        transform: scale(1.05);
-    }
-
-    /* Input de formulário estilizado */
-    .form-input {
-        @apply w-full px-4 py-3 rounded-xl text-white text-sm;
-        @apply focus:outline-none focus:ring-2 focus:ring-emerald-500/40;
-        @apply disabled:opacity-50;
-        @apply transition-all duration-200;
-        @apply placeholder:text-white/25;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .form-input:hover {
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .form-input:focus {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(16, 185, 129, 0.4);
-    }
-
-    /* Label de formulário */
-    .form-label {
-        @apply block text-white/50 text-xs font-medium mb-2 ml-1;
-    }
-
-    /* ─── BOTÕES ─── */
-
-    /* Botão principal (verde) */
-    .btn-primary {
-        @apply py-3 px-6 rounded-xl font-semibold text-sm;
-        @apply transition-all duration-200;
-        @apply disabled:opacity-40 disabled:cursor-not-allowed;
-        background: linear-gradient(135deg, #10b981, #06b6d4);
-        color: white;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.35);
-        transform: translateY(-1px);
-    }
-
-    .btn-primary:active:not(:disabled) {
-        transform: translateY(0);
-    }
-
-    /* Botão de sucesso (salvar) */
-    .btn-success {
-        @apply py-2 px-4 rounded-lg font-medium;
-        @apply transition-all duration-200;
-        @apply disabled:opacity-40 disabled:cursor-not-allowed;
-        background: rgba(16, 185, 129, 0.15);
-        color: rgb(52, 211, 153);
-        border: 1px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .btn-success:hover:not(:disabled) {
-        background: rgba(16, 185, 129, 0.25);
-    }
-
-    /* Botão de perigo (excluir) */
-    .btn-danger {
-        @apply py-2 px-4 rounded-lg font-medium;
-        @apply transition-all duration-200;
-        @apply disabled:opacity-40 disabled:cursor-not-allowed;
-        background: rgba(239, 68, 68, 0.15);
-        color: rgb(252, 165, 165);
-        border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-
-    .btn-danger:hover:not(:disabled) {
-        background: rgba(239, 68, 68, 0.25);
-    }
-
-    /* Botão fantasma (cancelar) */
-    .btn-ghost {
-        @apply py-2 px-4 rounded-lg font-medium;
-        @apply transition-all duration-200;
-        @apply disabled:opacity-40 disabled:cursor-not-allowed;
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .btn-ghost:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.7);
-    }
-
-    /* Botão de ação em ícone (editar/excluir no card) */
-    .action-btn {
-        @apply p-2 rounded-lg transition-all duration-200;
-        color: rgba(255, 255, 255, 0.3);
-    }
-
-    .action-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-    }
-
-    /* Spinner de carregamento */
-    .loading-spinner {
-        @apply inline-block w-4 h-4 rounded-full;
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-top-color: white;
-        animation: spin 0.6s linear infinite;
-    }
+/* ─── Tech Card (draggable) ─── */
+.tech-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.875rem;
+    cursor: default;
+    transition: all 0.2s ease;
+    animation: fadeIn 0.3s ease-out;
+    position: relative;
 }
 
-/* ─── 5. ANIMAÇÕES ─── */
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+.tech-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes fade-in {
+/* Tech Card — Icon container */
+.tech-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+/* ─── Edit/Delete Card States ─── */
+.tech-card-edit,
+.tech-card-delete {
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 0.875rem;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.tech-card-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.8125rem;
+    outline: none;
+}
+
+.tech-card-input:focus {
+    border-color: #8b5cf6;
+}
+
+/* ─── Drag Handle ─── */
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.15);
+    cursor: grab;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.drag-handle:hover {
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+    color: #8b5cf6;
+}
+
+/* ─── Priority Elements ─── */
+.priority-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.priority-badge-mini {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+
+/* ─── Card Action Buttons ─── */
+.card-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.group:hover .card-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    padding: 0;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Inline Edit Buttons ─── */
+.btn-save-sm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.375rem 0.75rem;
+    background: linear-gradient(135deg, #059669, #10b981);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-save-sm:disabled {
+    opacity: 0.5;
+}
+
+.btn-cancel-sm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.375rem 0.75rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 0.5rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-cancel-sm:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.btn-danger-sm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.375rem 0.75rem;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    border: none;
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-danger-sm:disabled {
+    opacity: 0.5;
+}
+
+/* ─── Footer ─── */
+.app-footer {
+    margin-top: auto;
+    padding-top: 3rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.25);
+    z-index: 1;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeIn {
     from {
         opacity: 0;
         transform: translateY(8px);
@@ -245,12 +583,25 @@
     }
 }
 
-/* Classe utilitária de animação */
-.animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-/* ─── 6. SCROLLBAR CUSTOMIZADA ─── */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─── Scrollbar Customizada ─── */
 ::-webkit-scrollbar {
     width: 6px;
 }
@@ -266,4 +617,10 @@
 
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Selection ─── */
+::selection {
+    background: rgba(139, 92, 246, 0.3);
+    color: white;
 }

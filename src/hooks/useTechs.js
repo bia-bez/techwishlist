@@ -133,8 +133,8 @@ export function useTechs() {
     const deleteTech = useCallback(
         async (id) => {
             if (!supabase) {
-                // Modo offline: remove localmente
-                setTechs((prev) => prev.filter((t) => t.id !== id));
+                // Modo offline: remove localmente (String cast para segurança de tipos)
+                setTechs((prev) => prev.filter((t) => String(t.id) !== String(id)));
                 return true;
             }
 
@@ -168,6 +168,7 @@ export function useTechs() {
     // Retorna tudo que os componentes precisam
     return {
         techs,
+        setTechs,
         loading,
         error,
         addTech,

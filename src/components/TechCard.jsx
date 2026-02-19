@@ -1,27 +1,15 @@
-/**
- * TechCard — Exibe uma única tecnologia com opções de editar e remover.
- *
- * Props:
- * - tech: objeto com { id, name, priority }
- * - onUpdate(id, updates): função para atualizar uma tech
- * - onDelete(id): função para remover uma tech
- *
- * Conceitos usados:
- * - useState: controlar modo de edição e estados visuais
- * - Renderização condicional: mostrar/esconder campos de edição
- * - Desestruturação de props
- */
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import { Pencil, Trash2, Check, X, Star } from "lucide-react";
+import { useDraggable } from "@dnd-kit/core";
+import { Pencil, Trash2, Check, X, GripVertical, Star } from "lucide-react";
+import TechIcon from "./TechIcon";
 
-// Cores para cada nível de prioridade (Tailwind classes)
 const PRIORITY_COLORS = {
-    1: "from-slate-500 to-slate-600",
+    1: "from-gray-500 to-gray-600",
     2: "from-blue-500 to-blue-600",
     3: "from-amber-500 to-amber-600",
     4: "from-orange-500 to-orange-600",
-    5: "from-red-500 to-rose-600",
+    5: "from-red-500 to-red-600",
 };
 
 const PRIORITY_LABELS = {
@@ -32,150 +20,173 @@ const PRIORITY_LABELS = {
     5: "Urgente",
 };
 
-function TechCard({ tech, onUpdate, onDelete }) {
-    // Controla se o card está em modo de edição
-    const [editing, setEditing] = useState(false);
+// Tamanhos limites
+const MIN_W = 200;
+const MIN_H = 60;
+const MAX_W = 600;
+const MAX_H = 400;
 
-    // Valores temporários durante edição (não altera o original até salvar)
+function TechCard({ tech, position, size, onUpdate, onDelete, onResize }) {
+    const [editing, setEditing] = useState(false);
     const [editName, setEditName] = useState(tech.name);
     const [editPriority, setEditPriority] = useState(tech.priority);
-
-    // Controla estados de carregamento para cada ação
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
-
-    // Controla o modal de confirmação de exclusão
     const [confirmDelete, setConfirmDelete] = useState(false);
 
-    /**
-     * Salva as alterações de edição.
-     * Só envia ao servidor se algo realmente mudou.
-     */
-    async function handleSave() {
-        const trimmedName = editName.trim();
-        if (!trimmedName) return;
+    // Resize state
+    const [isResizing, setIsResizing] = useState(false);
+    const resizeStart = useRef({ mouseX: 0, mouseY: 0, w: 0, h: 0 });
 
-        // Verifica se houve mudança real
-        if (trimmedName === tech.name && editPriority === tech.priority) {
-            setEditing(false);
-            return;
-        }
-
-        setSaving(true);
-        const success = await onUpdate(tech.id, {
-            name: trimmedName,
-            priority: editPriority,
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
+        useDraggable({
+            id: tech.id,
+            disabled: editing || confirmDelete || isResizing,
         });
 
-        if (success) {
-            setEditing(false);
+    // ─── Resize Handlers ───
+    const handleResizeStart = useCallback(
+        (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsResizing(true);
+            resizeStart.current = {
+                mouseX: e.clientX,
+                mouseY: e.clientY,
+                w: size?.w ?? 280,
+                h: size?.h ?? 72,
+            };
+        },
+        [size]
+    );
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        function handleMouseMove(e) {
+            const dx = e.clientX - resizeStart.current.mouseX;
+            const dy = e.clientY - resizeStart.current.mouseY;
+            const newW = Math.min(MAX_W, Math.max(MIN_W, resizeStart.current.w + dx));
+            const newH = Math.min(MAX_H, Math.max(MIN_H, resizeStart.current.h + dy));
+            onResize(tech.id, { w: newW, h: newH });
         }
+
+        function handleMouseUp() {
+            setIsResizing(false);
+        }
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isResizing, tech.id, onResize]);
+
+    // Dimensões atuais
+    const cardW = size?.w ?? 280;
+    const cardH = size?.h ?? 72;
+
+    // ─── Cálculos de Scaling Proporcional ───
+    // Ícone cresce com a altura (até 60%) ou largura (até 30%), limitado entre 28px e 120px
+    const iconSize = Math.min(120, Math.max(28, Math.min(cardH * 0.6, cardW * 0.3)));
+
+    // Fonte do título cresce com a largura/altura, limitada entre 14px e 32px
+    const titleSize = Math.min(32, Math.max(14, cardH * 0.25));
+
+    // Fonte secundária (prioridade) também escala um pouco
+    const metaSize = Math.min(14, Math.max(10, cardH * 0.15));
+
+    const style = {
+        position: "absolute",
+        left: position?.x ?? 0,
+        top: position?.y ?? 0,
+        width: cardW,
+        minHeight: cardH,
+        transform: transform
+            ? `translate(${transform.x}px, ${transform.y}px)`
+            : undefined,
+        opacity: isDragging ? 0.6 : 1,
+        zIndex: isDragging ? 100 : isResizing ? 99 : 1,
+        transition: isDragging || isResizing ? "none" : "box-shadow 0.2s ease",
+    };
+
+    // ─── Handlers CRUD ───
+    async function handleSave() {
+        const trimmed = editName.trim();
+        if (!trimmed) return;
+        setSaving(true);
+        await onUpdate(tech.id, { name: trimmed, priority: editPriority });
         setSaving(false);
+        setEditing(false);
     }
 
-    /**
-     * Cancela a edição e restaura os valores originais.
-     */
     function handleCancel() {
         setEditName(tech.name);
         setEditPriority(tech.priority);
         setEditing(false);
     }
 
-    /**
-     * Confirma e executa a exclusão.
-     */
-    async function handleDelete() {
+    async function handleDelete(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         setDeleting(true);
         await onDelete(tech.id);
+        // Não precisamos setDeleting(false) se o componente desmontar
+        // Mas por segurança, se falhar:
         setDeleting(false);
+        setConfirmDelete(false);
     }
 
-    // ─── MODO DE EDIÇÃO ───
+    // ─── Modo Edição (Fixo) ───
     if (editing) {
         return (
-            <div className="glass-card p-4 rounded-xl animate-fade-in border border-emerald-500/30">
-                {/* Campo de edição do nome */}
+            <div ref={setNodeRef} style={style} className="tech-card-edit" {...attributes}>
                 <input
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="form-input mb-3 text-sm"
-                    disabled={saving}
+                    className="tech-card-input"
                     autoFocus
                 />
-
-                {/* Seletor de prioridade compacto */}
-                <div className="flex gap-1 mb-3">
-                    {[1, 2, 3, 4, 5].map((n) => (
+                <div className="flex gap-1.5 mt-2">
+                    {[1, 2, 3, 4, 5].map((p) => (
                         <button
-                            key={n}
+                            key={p}
                             type="button"
-                            onClick={() => setEditPriority(n)}
-                            disabled={saving}
-                            className={`flex-1 py-1 rounded-lg text-xs font-bold transition-all ${editPriority === n
-                                    ? "bg-emerald-500 text-white scale-105"
-                                    : "bg-white/5 text-white/50 hover:bg-white/10"
-                                }`}
+                            onClick={() => setEditPriority(p)}
+                            className={`priority-btn-sm ${editPriority === p ? "priority-btn-active" : ""}`}
                         >
-                            {n}
+                            {p}
                         </button>
                     ))}
                 </div>
-
-                {/* Botões salvar/cancelar */}
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleSave}
-                        disabled={saving || !editName.trim()}
-                        className="btn-success flex-1 text-sm"
-                    >
-                        {saving ? (
-                            <span className="loading-spinner mx-auto" />
-                        ) : (
-                            <span className="flex items-center justify-center gap-1">
-                                <Check size={14} /> Salvar
-                            </span>
-                        )}
+                <div className="flex gap-2 mt-3">
+                    <button onClick={handleSave} disabled={saving} className="btn-save-sm">
+                        <Check size={14} /> {saving ? "..." : "Salvar"}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        disabled={saving}
-                        className="btn-ghost flex-1 text-sm"
-                    >
-                        <span className="flex items-center justify-center gap-1">
-                            <X size={14} /> Cancelar
-                        </span>
+                    <button onClick={handleCancel} className="btn-cancel-sm">
+                        <X size={14} /> Cancelar
                     </button>
                 </div>
             </div>
         );
     }
 
-    // ─── CONFIRMAÇÃO DE EXCLUSÃO ───
+    // ─── Modo Confirmação (Fixo) ───
     if (confirmDelete) {
         return (
-            <div className="glass-card p-4 rounded-xl animate-fade-in border border-red-500/30">
-                <p className="text-white/80 text-sm text-center mb-3">
-                    Remover <strong className="text-white">{tech.name}</strong>?
+            <div ref={setNodeRef} style={style} className="tech-card-delete" {...attributes}>
+                <p className="text-white/80 text-sm mb-3">
+                    Remover <strong>{tech.name}</strong>?
                 </p>
                 <div className="flex gap-2">
-                    <button
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        className="btn-danger flex-1 text-sm"
-                    >
-                        {deleting ? (
-                            <span className="loading-spinner mx-auto" />
-                        ) : (
-                            "Sim, remover"
-                        )}
+                    <button onClick={handleDelete} disabled={deleting} className="btn-danger-sm">
+                        {deleting ? "Removendo..." : "Confirmar"}
                     </button>
-                    <button
-                        onClick={() => setConfirmDelete(false)}
-                        disabled={deleting}
-                        className="btn-ghost flex-1 text-sm"
-                    >
+                    <button onClick={() => setConfirmDelete(false)} className="btn-cancel-sm">
                         Cancelar
                     </button>
                 </div>
@@ -183,55 +194,86 @@ function TechCard({ tech, onUpdate, onDelete }) {
         );
     }
 
-    // ─── VISUALIZAÇÃO NORMAL ───
+    // ─── Card Normal (Arrastável + Scalable) ───
     return (
-        <div className="tech-card group">
-            {/* Badge de prioridade com gradiente */}
+        <div ref={setNodeRef} style={style} className="tech-card group flex flex-row items-center gap-3" {...attributes}>
+            {/* Grip handle */}
+            <button className="drag-handle" {...listeners} aria-label="Arrastar card">
+                <GripVertical size={Math.max(16, cardH * 0.2)} />
+            </button>
+
+            {/* Ícone Scalable */}
             <div
-                className={`priority-badge bg-gradient-to-r ${PRIORITY_COLORS[tech.priority]}`}
+                className="tech-card-icon transition-all duration-75"
+                style={{ width: iconSize + 10, height: iconSize + 10 }}
             >
-                <Star size={10} className="fill-current" />
-                <span>{tech.priority}</span>
+                <TechIcon name={tech.name} size={iconSize} />
             </div>
 
-            {/* Info da tecnologia */}
-            <div className="flex-1 min-w-0 ml-3">
-                <h3 className="text-white font-medium truncate">{tech.name}</h3>
-                <p className="text-white/40 text-xs mt-0.5">
-                    {PRIORITY_LABELS[tech.priority]}
-                </p>
-            </div>
-
-            {/* Ações (aparecem no hover) */}
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <button
-                    onClick={() => setEditing(true)}
-                    className="action-btn hover:text-emerald-400"
-                    title="Editar"
+            {/* Info Scalable */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center h-full">
+                <h3
+                    className="text-white font-medium truncate transition-all duration-75"
+                    style={{ fontSize: titleSize, lineHeight: 1.2 }}
                 >
+                    {tech.name}
+                </h3>
+
+                <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`priority-dot bg-gradient-to-r ${PRIORITY_COLORS[tech.priority]}`} />
+                    <span
+                        className="text-white/40 transition-all duration-75"
+                        style={{ fontSize: metaSize }}
+                    >
+                        {PRIORITY_LABELS[tech.priority]}
+                    </span>
+                </div>
+            </div>
+
+            {/* Badge Scalable */}
+            <div className={`priority-badge-mini bg-gradient-to-r ${PRIORITY_COLORS[tech.priority]}`}>
+                <Star size={Math.max(8, cardH * 0.12)} />
+                <span style={{ fontSize: Math.max(10, cardH * 0.12) }}>{tech.priority}</span>
+            </div>
+
+            {/* Ações (position absolute para não atrapalhar layout) */}
+            <div className="card-actions absolute top-2 right-2 flex gap-1 bg-black/50 backdrop-blur-sm rounded-md p-1">
+                <button onClick={() => setEditing(true)} className="action-btn hover:text-emerald-400" title="Editar">
                     <Pencil size={14} />
                 </button>
-                <button
-                    onClick={() => setConfirmDelete(true)}
-                    className="action-btn hover:text-red-400"
-                    title="Remover"
-                >
+                <button onClick={() => setConfirmDelete(true)} className="action-btn hover:text-red-400" title="Remover">
                     <Trash2 size={14} />
                 </button>
             </div>
+
+            {/* Resize Handle */}
+            <div
+                className="resize-handle"
+                onMouseDown={handleResizeStart}
+                title="Redimensionar"
+            />
         </div>
     );
 }
 
-// Validação das props
 TechCard.propTypes = {
+    // ... (mesmos propTypes)
     tech: PropTypes.shape({
-        id: PropTypes.number.isRequired,
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         name: PropTypes.string.isRequired,
         priority: PropTypes.number.isRequired,
     }).isRequired,
+    position: PropTypes.shape({
+        x: PropTypes.number.isRequired,
+        y: PropTypes.number.isRequired,
+    }).isRequired,
+    size: PropTypes.shape({
+        w: PropTypes.number.isRequired,
+        h: PropTypes.number.isRequired,
+    }),
     onUpdate: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired,
+    onResize: PropTypes.func.isRequired,
 };
 
 export default TechCard;
