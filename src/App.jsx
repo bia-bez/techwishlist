@@ -11,9 +11,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useTechs } from "./hooks/useTechs";
 import TechFormWidget from "./components/TechFormWidget"; // Widget flutuante
+import BrandLogoWidget from "./components/BrandLogoWidget"; // Logo arrastável
 import TechList from "./components/TechList";
 import ErrorBanner from "./components/ErrorBanner";
-import BrandLogo from "./components/BrandLogo";
 
 /**
  * Calcula posições iniciais em grid para cards sem posição definida.
@@ -69,6 +69,12 @@ function App() {
     return saved ? JSON.parse(saved) : { w: 360, h: "auto" };
   });
 
+  // Logo Widget state
+  const [logoPos, setLogoPos] = useState(() => {
+    const saved = localStorage.getItem("tech_layout_logo_pos");
+    return saved ? JSON.parse(saved) : { x: 400, y: 20 };
+  });
+
   const containerRef = useRef(null);
 
   // Atribui posições automáticas
@@ -87,6 +93,11 @@ function App() {
 
     if (active.id === "tech-form-widget") {
       setFormPos((prev) => ({
+        x: prev.x + delta.x,
+        y: prev.y + delta.y,
+      }));
+    } else if (active.id === "brand-logo-widget") {
+      setLogoPos((prev) => ({
         x: prev.x + delta.x,
         y: prev.y + delta.y,
       }));
@@ -129,19 +140,17 @@ function App() {
     localStorage.setItem("tech_layout_form_size", JSON.stringify(formSize));
   }, [formSize]);
 
+  useEffect(() => {
+    localStorage.setItem("tech_layout_logo_pos", JSON.stringify(logoPos));
+  }, [logoPos]);
+
   return (
     <div className="app-container" ref={containerRef}>
       {/* Efeitos decorativos de fundo */}
       <div className="glow glow-1" />
       <div className="glow glow-2" />
 
-      {/* Header com Logo Personalizado */}
-      <header className="app-header mb-8 flex flex-col items-center pointer-events-none select-none">
-        <BrandLogo className="mb-2 pointer-events-auto" />
-        <p className="app-subtitle">
-          Organize suas metas de aprendizado tecnológico
-        </p>
-      </header>
+
 
       {/* Banner de erro */}
       {error && <ErrorBanner message={error} onDismiss={clearError} />}
@@ -165,6 +174,9 @@ function App() {
         onResize={handleResizeCard}
         loading={loading}
       >
+        {/* Logo Widget arrastável */}
+        <BrandLogoWidget position={logoPos} />
+
         {/* TechFormWidget agora vive dentro do Canvas Context */}
         <TechFormWidget
           onAdd={addTech}
