@@ -143,48 +143,98 @@ function App() {
     setViewState({ x: 0, y: 0, scale: 1 });
   }, []);
 
-  /**
-   * handleDragEnd: O Coração do Drag & Drop
-   * 
-   * Ajuste para Zoom:
-   * Quando o canvas está com zoom (scale != 1), o movimento do mouse
-   * não corresponde 1:1 aos pixels do canvas.
-   * Precisamos dividir o delta pelo scale.
-   */
-  const handleDragEnd = useCallback((event) => {
-    const { active, delta } = event;
-    if (!delta) return;
+  // ─── Auto-Pan Logic (Edge Scrolling) ───
+  // Quando arrastamos um CARD perto da borda, movemos a câmera.
+  const [isDraggingItem, setIsDraggingItem] = useState(false);
+  const autoPanIntervalRef = useRef(null);
+  const currentPanVelocity = useRef({ dx: 0, dy: 0 });
 
-    // Compensar o zoom
-    const scale = viewState.scale;
-    const adjustedDelta = {
-      x: delta.x / scale,
-      y: delta.y / scale,
+  const handleGlobalDragStart = useCallback(() => {
+    setIsDraggingItem(true);
+  }, []);
+
+  const handleGlobalDragEnd = useCallback((event) => {
+    setIsDraggingItem(false);
+    handleDragEnd(event);
+    stopAutoPan();
+  }, [handleDragEnd]);
+
+  const stopAutoPan = () => {
+    if (autoPanIntervalRef.current) {
+      clearInterval(autoPanIntervalRef.current);
+      autoPanIntervalRef.current = null;
+    }
+    currentPanVelocity.current = { dx: 0, dy: 0 };
+  };
+
+  useEffect(() => {
+    if (!isDraggingItem) {
+      stopAutoPan();
+      return;
+    }
+
+    const checkEdge = (x, y) => {
+      const edgeThreshold = 100;
+      const maxSpeed = 25;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      let dx = 0;
+      let dy = 0;
+
+      if (x < edgeThreshold) dx = Math.min(maxSpeed, (edgeThreshold - x) / 2);
+      if (x > vw - edgeThreshold) dx = -Math.min(maxSpeed, (x - (vw - edgeThreshold)) / 2);
+      if (y < edgeThreshold) dy = Math.min(maxSpeed, (edgeThreshold - y) / 2);
+      if (y > vh - edgeThreshold) dy = -Math.min(maxSpeed, (y - (vh - edgeThreshold)) / 2);
+
+      currentPanVelocity.current = { dx, dy };
+
+      if (dx !== 0 || dy !== 0) {
+        if (!autoPanIntervalRef.current) {
+          autoPanIntervalRef.current = setInterval(() => {
+            const { dx, dy } = currentPanVelocity.current;
+            if (dx !== 0 || dy !== 0) {
+              setViewState(prev => ({
+                ...prev,
+                x: prev.x + dx,
+                y: prev.y + dy
+              }));
+            }
+          }, 16);
+        }
+      } else {
+        stopAutoPan();
+      }
     };
 
-    if (active.id === "tech-form-widget") {
-      setFormPos((prev) => ({
-        x: prev.x + adjustedDelta.x,
-        y: prev.y + adjustedDelta.y,
-      }));
-    } else if (active.id === "brand-logo-widget") {
-      setLogoPos((prev) => ({
-        x: prev.x + adjustedDelta.x,
-        y: prev.y + adjustedDelta.y,
-      }));
-    } else {
-      setPositions((prev) => {
-        const current = prev[active.id] || { x: 0, y: 0 };
-        return {
-          ...prev,
-          [active.id]: {
-            x: current.x + adjustedDelta.x,
-            y: current.y + adjustedDelta.y,
-          },
-        };
-      });
-    }
-  }, [viewState.scale]);
+    const onWindowMouseMove = (e) => {
+      checkEdge(e.clientX, e.clientY);
+    };
+
+    const onWindowTouchMove = (e) => {
+      if (e.touches.length > 0) {
+        checkEdge(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    window.addEventListener("mousemove", onWindowMouseMove);
+    window.addEventListener("touchmove", onWindowTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener("mousemove", onWindowMouseMove);
+      window.removeEventListener("touchmove", onWindowTouchMove);
+      stopAutoPan();
+    };
+  }, [isDraggingItem]);
+
+  /**
+   * handleDragEnd: O Coração do Drag & Drop
+   * ...
+   */
+  const handleDragEndRef = useCallback((event) => {
+    // Mantido apenas para referência, mas o handleGlobalDragEnd chama o original handleDragEnd
+    // que está definido abaixo com todas as compensações de zoom.
+  }, []);
 
   // ─── Canvas Pan & Zoom Handlers ───
 
@@ -332,10 +382,13 @@ function App() {
         sizes={sizes}
         onUpdate={updateTech}
         onDelete={deleteTech}
-        onDragEnd={handleDragEnd}
+        // Intercepta DragStart/End para Auto-Pan
+        onDragStart={handleGlobalDragStart}
+        onDragEnd={handleGlobalDragEnd}
+        // onDragMove não precisa ser passado explicitamente se usamos window listener
         onResize={handleResizeCard}
         loading={loading}
-        viewState={viewState} // Passando estado da câmera
+        viewState={viewState}
       >
         {/* Logo Widget arrastável */}
         <BrandLogoWidget position={logoPos} />

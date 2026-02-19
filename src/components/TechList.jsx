@@ -30,9 +30,11 @@ function TechList({
   onUpdate,
   onDelete,
   onDragEnd,
+  onDragStart, // Novo
+  onDragMove,
   onResize,
   loading,
-  viewState, // Novo prop
+  viewState,
   children,
 }) {
   /**
@@ -76,7 +78,7 @@ function TechList({
   return (
     <div className="dashboard-container">
       {/* Canvas de drag livre */}
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart} onDragMove={onDragMove}>
         <div
           className="dashboard-canvas"
           style={canvasStyle}
@@ -126,6 +128,8 @@ TechList.propTypes = {
   onUpdate: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onDragEnd: PropTypes.func.isRequired,
+  onDragStart: PropTypes.func, // Novo para auto-pan
+  onDragMove: PropTypes.func,
   onResize: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   viewState: PropTypes.shape({
