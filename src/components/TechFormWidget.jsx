@@ -43,8 +43,8 @@ function TechFormWidget({ onAdd, position, size, onResize, techCount }) {
     // ─── Resize Handlers ───
     const handleResizeStart = useCallback(
         (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+            e.preventDefault(); // Previne seleção de texto
+            e.stopPropagation(); // IMPORTANTE: Impede que o drag do pai (useDraggable) seja ativado
             setIsResizing(true);
             resizeStart.current = {
                 mouseX: e.clientX,

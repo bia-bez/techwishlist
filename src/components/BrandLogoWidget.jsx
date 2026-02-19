@@ -3,12 +3,17 @@
  *
  * Usa useDraggable do @dnd-kit para drag livre.
  * Sem resize (tamanho fixo).
+ * 
+ * Por que separar em um widget?
+ * - Para que o logo seja tratado como um objeto manipulável no canvas,
+ *   assim como os cards e o formulário.
  */
 import PropTypes from "prop-types";
 import { useDraggable } from "@dnd-kit/core";
 import BrandLogo from "./BrandLogo";
 
 function BrandLogoWidget({ position }) {
+    // Hook do dnd-kit que torna este elemento arrastável
     const { attributes, listeners, setNodeRef, transform, isDragging } =
         useDraggable({ id: "brand-logo-widget" });
 

@@ -59,6 +59,7 @@ export function useTechs() {
             console.error("Erro ao buscar tecnologias:", err);
             setError("Não foi possível carregar as tecnologias. Tente novamente.");
         } finally {
+            // finally roda SEMPRE, independente de sucesso ou erro.
             setLoading(false);
         }
     }, []);
@@ -70,7 +71,7 @@ export function useTechs() {
     const addTech = useCallback(
         async (tech) => {
             if (!supabase) {
-                // Modo offline: adiciona apenas localmente
+                // Modo offline: adiciona apenas localmente (Optimistic UI fake)
                 setTechs((prev) => [{ id: Date.now(), ...tech }, ...prev]);
                 return true;
             }
@@ -87,7 +88,7 @@ export function useTechs() {
                 return false;
             }
 
-            // Recarrega a lista atualizada do servidor
+            // Recarrega a lista atualizada do servidor para garantir sincronia
             await fetchTechs();
             return true;
         },
@@ -165,7 +166,7 @@ export function useTechs() {
         fetchTechs();
     }, [fetchTechs]);
 
-    // Retorna tudo que os componentes precisam
+    // Retorna tudo que os componentes precisam (Interface Pública do Hook)
     return {
         techs,
         setTechs,

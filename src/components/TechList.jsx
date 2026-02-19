@@ -36,7 +36,14 @@ function TechList({
 }) {
   /**
    * Sensors definem como o drag é iniciado.
-   * distance: 8 previne drag acidental em cliques normais.
+   * 
+   * - PointerSensor: Mouse e Pen. activationConstraint (distance: 8) previne
+   *   que qualquer clique seja confundido com drag. O usuário precisa mover 8px
+   *   para o drag começar.
+   * 
+   * - TouchSensor: Telas de toque (celular/tablet).
+   *   delay: 200ms e tolerance: 5px evitam que o scroll da página
+   *   seja bloqueado acidentalmente.
    */
   const sensors = useSensors(
     useSensor(PointerSensor, {

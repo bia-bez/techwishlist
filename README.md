@@ -1,53 +1,64 @@
-# 🚀 Tech Wishlist
+# Tech Wishlist 🚀
 
-Organize suas metas de aprendizado tecnológico com estilo. Uma dashboard interativa para priorizar e acompanhar as tecnologias que você quer dominar.
+Um projeto moderno e interativo para organizar suas metas de aprendizado tecnológico.
 
-> **Note**
-> Este projeto foi atualizado para uma experiência **Premium** com Drag & Drop livre e ícones dinâmicos.
+![Screenshot](https://raw.githubusercontent.com/pikulitomarkin/techwishlist/main/public/screenshot.png)
 
-## ✨ Funcionalidades
+## 🎯 Objetivo Didático (Mentoria)
 
-- **Canvas Infinito**: Arraste os cards para qualquer lugar da tela. Liberdade total de organização.
-- **Cards Redimensionáveis**: Puxe o canto inferior direito para aumentar o card. O ícone e o texto crescem junto!
-- **Ícones Automáticos**: Digite o nome da tecnologia (ex: "React", "Python") e o ícone aparece automaticamente (via Devicon).
-- **Priorização Visual**: Cores e badges indicam o nível de urgência de cada tecnologia.
-- **Glassmorphism UI**: Design moderno com efeitos de vidro, glows neon e tipografia manuscrita.
-- **Offline-First**: Funciona mesmo sem conexão com o banco de dados (modo local).
-- **Autocomplete**: Sugestões inteligentes enquanto você digita.
+Este projeto foi construído não apenas para funcionar, mas para **ensinar**. O código está repleto de comentários explicativos ("Educational Comments") cobrindo conceitos avançados de React:
 
-## 🛠️ Tecnologias
+-   **Custom Hooks (`useTechs`)**: Como separar lógica de estado da UI.
+-   **Context API & Drag-and-Drop (`@dnd-kit`)**: Gerenciamento de estado complexo e interações físicas.
+-   **Optimistic UI**: Como atualizar a interface antes mesmo do servidor responder (sensação de zero latência).
+-   **Supabase Integration**: Backend-as-a-Service para persistência de dados real.
+-   **LocalStorage Persistence**: Como manter o estado do usuário entre sessões.
 
-- **Frontend**: React 19, Vite, Tailwind CSS
-- **Interatividade**: @dnd-kit (Core, Draggable)
-- **Ícones**: Lucide React + Devicon CDN
-- **Backend (Opcional)**: Supabase (para persistência na nuvem)
+## 🛠️ Stack Tecnológico
 
-## 🚀 Como Rodar
+-   **Frontend:** React, Vite
+-   **Estilização:** Tailwind CSS (Glassmorphism UI)
+-   **Ícones:** Lucide React + Devicon CDN
+-   **Backend:** Supabase (Database + Realtime)
+-   **Drag & Drop:** @dnd-kit/core
 
-1.  Clone o repositório.
-2.  Instale as dependências:
+## 🚀 Como Executar
+
+### Pré-requisitos
+-   Node.js 20+ (Recomendado usar `nvm`)
+
+### Passo a Passo
+
+1.  **Clone o repositório:**
+    ```bash
+    git clone https://github.com/pikulitomarkin/techwishlist.git
+    cd techwishlist
+    ```
+
+2.  **Instale as dependências:**
     ```bash
     npm install
     ```
-3.  Inicie o servidor de desenvolvimento:
+
+3.  **Configuração (Opcional para modo Offline):**
+    Para persistência na nuvem, crie um arquivo `.env` na raiz com suas credenciais do Supabase:
+    ```env
+    VITE_SUPABASE_URL=sua_url_aqui
+    VITE_SUPABASE_ANON_KEY=sua_chave_aqui
+    ```
+    *Sem isso, o app funciona em modo "Offline" (salva apenas na memória).*
+
+4.  **Rode o projeto:**
     ```bash
     npm run dev
     ```
-4.  Abra `http://localhost:5173` no navegador.
 
-## 📦 Build para Produção
+## 📂 Estrutura do Projeto
 
-```bash
-npm run build
-npm run preview
-```
-
-## 🎨 Design System
-
-- **Fonte**: Inter (UI) + Caveat (Logo/Handwriting)
-- **Cores**: Palette Dark Mode com gradientes Violet/Cyan/Amber/Red.
-- **Componentes**: Cards, Badges, Glass Inputs, Floating Action Buttons.
+-   `src/components`: Componentes reutilizáveis (Cards, Widgets, Listas).
+-   `src/hooks`: Lógica de negócio isolada (ex: `useTechs.js`).
+-   `src/data`: Dados estáticos e helpers (ex: mapeamento de ícones).
 
 ---
 
-Feito com ♥ pela **Vintage DevStack**.
+Feito com 💜 para a comunidade dev.

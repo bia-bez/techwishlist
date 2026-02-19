@@ -85,11 +85,19 @@ function App() {
   }, [techs]);
 
   /**
-   * Gerencia drag de TODOS os elementos (cards e form widget).
+   * handleDragEnd: O Coração do Drag & Drop
+   * 
+   * Esta função é chamada quando o usuário solta um item.
+   * O objeto 'active' diz quem foi arrastado.
+   * O objeto 'delta' diz o quanto ele se moveu (x, y) desde o início.
    */
   const handleDragEnd = useCallback((event) => {
     const { active, delta } = event;
     if (!delta) return;
+
+    // Lógica para limitar o movimento (Clamping)
+    // Math.max(0, valor) garante que nunca tenhamos coordenadas negativas.
+    // Isso cria uma "parede invisível" no topo e esquerda.
 
     if (active.id === "tech-form-widget") {
       setFormPos((prev) => ({
@@ -102,6 +110,7 @@ function App() {
         y: Math.max(0, prev.y + delta.y),
       }));
     } else {
+      // Para os cards normais, atualizamos apenas o ID específico
       setPositions((prev) => {
         const current = prev[active.id] || { x: 0, y: 0 };
         return {
@@ -123,8 +132,12 @@ function App() {
     setFormSize(newSize);
   }, []);
 
-  // ─── Persistence Effects ───
+  // ─── EFFECTS: PERSISTÊNCIA ───
+  // Para que o usuário não perca o layout ao dar F5, salvamos tudo no localStorage.
+  // O useEffect roda sempre que o estado especificado no array de dependências muda.
+
   useEffect(() => {
+    // JSON.stringify converte o objeto JS em string para salvar no browser
     localStorage.setItem("tech_layout_positions", JSON.stringify(positions));
   }, [positions]);
 
