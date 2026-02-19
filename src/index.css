@@ -1,3 +1,269 @@
+/*
+ * index.css — Design System centralizado.
+ *
+ * Aqui definimos TODOS os estilos reutilizáveis do projeto.
+ * Os componentes usam essas classes via className="nome-da-classe".
+ *
+ * Organização:
+ * 1. Tailwind directives (obrigatório)
+ * 2. Variáveis CSS globais
+ * 3. Reset e base
+ * 4. Componentes (glass-card, botões, inputs)
+ * 5. Utilitários e animações
+ */
+
+/* ─── 1. FONTE DO GOOGLE FONTS (deve vir antes das diretivas) ─── */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* ─── 2. TAILWIND DIRECTIVES ─── */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── 3. BASE & RESET ─── */
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+/* ─── 4. COMPONENTES REUTILIZÁVEIS ─── */
+@layer components {
+
+    /* Fundo escuro premium */
+    .bg-dark {
+        background-color: #0a0a0f;
+        background-image: radial-gradient(ellipse at 50% 0%,
+                rgba(16, 185, 129, 0.03) 0%,
+                transparent 60%);
+    }
+
+    /* Brilhos de fundo decorativos (efeito ambiental) */
+    .bg-glow {
+        position: fixed;
+        border-radius: 50%;
+        filter: blur(120px);
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+    .bg-glow-1 {
+        width: 400px;
+        height: 400px;
+        top: -100px;
+        right: -100px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent);
+    }
+
+    .bg-glow-2 {
+        width: 350px;
+        height: 350px;
+        bottom: -80px;
+        left: -80px;
+        background: radial-gradient(circle, rgba(6, 182, 212, 0.1), transparent);
+    }
+
+    /* Card com efeito de vidro (glassmorphism) */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* Card de tecnologia na lista */
+    .tech-card {
+        @apply glass-card flex items-center p-4 rounded-xl;
+        transition: all 0.2s ease;
+    }
+
+    .tech-card:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+    }
+
+    /* Badge de prioridade */
+    .priority-badge {
+        @apply flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-xs font-bold;
+        min-width: 44px;
+        justify-content: center;
+    }
+
+    /* Botões de prioridade no formulário */
+    .priority-btn {
+        @apply flex flex-col items-center py-2 rounded-xl transition-all duration-200;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .priority-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .priority-btn-active {
+        background: rgba(16, 185, 129, 0.15) !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+        color: rgb(52, 211, 153) !important;
+        transform: scale(1.05);
+    }
+
+    /* Input de formulário estilizado */
+    .form-input {
+        @apply w-full px-4 py-3 rounded-xl text-white text-sm;
+        @apply focus:outline-none focus:ring-2 focus:ring-emerald-500/40;
+        @apply disabled:opacity-50;
+        @apply transition-all duration-200;
+        @apply placeholder:text-white/25;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .form-input:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .form-input:focus {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    /* Label de formulário */
+    .form-label {
+        @apply block text-white/50 text-xs font-medium mb-2 ml-1;
+    }
+
+    /* ─── BOTÕES ─── */
+
+    /* Botão principal (verde) */
+    .btn-primary {
+        @apply py-3 px-6 rounded-xl font-semibold text-sm;
+        @apply transition-all duration-200;
+        @apply disabled:opacity-40 disabled:cursor-not-allowed;
+        background: linear-gradient(135deg, #10b981, #06b6d4);
+        color: white;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .btn-primary:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    /* Botão de sucesso (salvar) */
+    .btn-success {
+        @apply py-2 px-4 rounded-lg font-medium;
+        @apply transition-all duration-200;
+        @apply disabled:opacity-40 disabled:cursor-not-allowed;
+        background: rgba(16, 185, 129, 0.15);
+        color: rgb(52, 211, 153);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-success:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.25);
+    }
+
+    /* Botão de perigo (excluir) */
+    .btn-danger {
+        @apply py-2 px-4 rounded-lg font-medium;
+        @apply transition-all duration-200;
+        @apply disabled:opacity-40 disabled:cursor-not-allowed;
+        background: rgba(239, 68, 68, 0.15);
+        color: rgb(252, 165, 165);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Botão fantasma (cancelar) */
+    .btn-ghost {
+        @apply py-2 px-4 rounded-lg font-medium;
+        @apply transition-all duration-200;
+        @apply disabled:opacity-40 disabled:cursor-not-allowed;
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Botão de ação em ícone (editar/excluir no card) */
+    .action-btn {
+        @apply p-2 rounded-lg transition-all duration-200;
+        color: rgba(255, 255, 255, 0.3);
+    }
+
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Spinner de carregamento */
+    .loading-spinner {
+        @apply inline-block w-4 h-4 rounded-full;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-top-color: white;
+        animation: spin 0.6s linear infinite;
+    }
+}
+
+/* ─── 5. ANIMAÇÕES ─── */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Classe utilitária de animação */
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+
+/* ─── 6. SCROLLBAR CUSTOMIZADA ─── */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
