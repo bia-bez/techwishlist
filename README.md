@@ -2,7 +2,8 @@
 
 Um projeto moderno e interativo para organizar suas metas de aprendizado tecnológico.
 
-![Screenshot](https://raw.githubusercontent.com/pikulitomarkin/techwishlist/main/public/screenshot.png)
+<img width="1919" height="858" alt="image" src="https://github.com/user-attachments/assets/6a334177-4b86-47d4-aedb-c2a53c8c6918" />
+
 
 ## 🎯 Objetivo Didático (Mentoria)
 
