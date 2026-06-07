@@ -1,11 +1,11 @@
-# Tech Wishlist 🚀
+# Tech Wishlist (Mentoria)
 
-Um projeto moderno e interativo para organizar suas metas de aprendizado tecnológico.
+Um projeto interativo para organizar suas metas de aprendizado tecnológico.
 
 <img width="1919" height="858" alt="image" src="https://github.com/user-attachments/assets/6a334177-4b86-47d4-aedb-c2a53c8c6918" />
 
 
-## 🎯 Objetivo Didático (Mentoria)
+##  Objetivo Didático 
 
 Este projeto foi construído não apenas para funcionar, mas para **ensinar**. O código está repleto de comentários explicativos ("Educational Comments") cobrindo conceitos avançados de React:
 
@@ -15,7 +15,7 @@ Este projeto foi construído não apenas para funcionar, mas para **ensinar**. O
 -   **Supabase Integration**: Backend-as-a-Service para persistência de dados real.
 -   **LocalStorage Persistence**: Como manter o estado do usuário entre sessões.
 
-## 🛠️ Stack Tecnológico
+##  Stack Tecnológico
 
 -   **Frontend:** React, Vite
 -   **Estilização:** Tailwind CSS (Glassmorphism UI)
@@ -23,7 +23,7 @@ Este projeto foi construído não apenas para funcionar, mas para **ensinar**. O
 -   **Backend:** Supabase (Database + Realtime)
 -   **Drag & Drop:** @dnd-kit/core
 
-## 🚀 Como Executar
+##  Como Executar
 
 ### Pré-requisitos
 -   Node.js 20+ (Recomendado usar `nvm`)
@@ -61,5 +61,3 @@ Este projeto foi construído não apenas para funcionar, mas para **ensinar**. O
 -   `src/data`: Dados estáticos e helpers (ex: mapeamento de ícones).
 
 ---
-
-Feito com 💜 para a comunidade dev.
